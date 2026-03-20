@@ -43,11 +43,21 @@ Refactoring happens at three points:
 
 Copy the skill directories into your Claude Code skills folder:
 
-```bash
-# macOS/Linux
-cp -r build small-feature two-agent-planning building-against-plan refactor ~/.claude/skills/
+**PowerShell:**
+```powershell
+$skills = "build", "small-feature", "two-agent-planning", "building-against-plan", "refactor"
+foreach ($s in $skills) {
+    Copy-Item -Recurse -Force $s "$env:USERPROFILE\.claude\skills\$s"
+}
+```
 
-# Windows (Git Bash)
+**macOS/Linux (bash):**
+```bash
+cp -r build small-feature two-agent-planning building-against-plan refactor ~/.claude/skills/
+```
+
+**Windows (Git Bash):**
+```bash
 cp -r build small-feature two-agent-planning building-against-plan refactor "$USERPROFILE/.claude/skills/"
 ```
 
@@ -55,8 +65,16 @@ Then merge the contents of `CLAUDE.md` from this repo into your `~/.claude/CLAUD
 
 ### Option B: Project-level installation (single project)
 
-Copy into your project's `.claude/skills/` directory:
+**PowerShell:**
+```powershell
+New-Item -ItemType Directory -Force -Path .claude\skills | Out-Null
+$skills = "build", "small-feature", "two-agent-planning", "building-against-plan", "refactor"
+foreach ($s in $skills) {
+    Copy-Item -Recurse -Force $s ".claude\skills\$s"
+}
+```
 
+**bash:**
 ```bash
 mkdir -p .claude/skills
 cp -r build small-feature two-agent-planning building-against-plan refactor .claude/skills/
