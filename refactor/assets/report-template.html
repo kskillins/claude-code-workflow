@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Refactoring Analysis Report - %%DATE%%</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5fcfe;
+    color: #091c31;
+    line-height: 1.6;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: #14304e;
+    color: #d6e4e9;
+    padding: 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+  }
+  .sidebar h2 {
+    color: #f5fcfe;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #455565;
+  }
+  .sidebar .date { color: #90b1c2; font-size: 12px; margin-bottom: 20px; }
+  .nav-item {
+    display: block;
+    padding: 8px 12px;
+    color: #90b1c2;
+    text-decoration: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 4px;
+    font-size: 14px;
+  }
+  .nav-item:hover, .nav-item.active { background: #4b7790; color: #f5fcfe; }
+  .filter-section { margin-top: 24px; }
+  .filter-section h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7a8c9a;
+    margin-bottom: 8px;
+  }
+  .filter-btn {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid #455565;
+    background: transparent;
+    color: #d6e4e9;
+    margin: 2px;
+  }
+  .filter-btn.active { background: #4b7790; border-color: #4b7790; color: #f5fcfe; }
+  .search-box {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #455565;
+    background: #091c31;
+    color: #d6e4e9;
+    font-size: 13px;
+    margin-top: 16px;
+  }
+  .search-box::placeholder { color: #7a8c9a; }
+
+  /* Main */
+  .main { margin-left: 260px; padding: 32px; flex: 1; }
+
+  /* Dashboard */
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(9,28,49,0.08);
+    text-align: center;
+  }
+  .stat-card .number { font-size: 36px; font-weight: 700; }
+  .stat-card .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7a8c9a;
+    margin-top: 4px;
+  }
+  .stat-card.critical .number { color: #c0392b; }
+  .stat-card.major .number { color: #e67e22; }
+  .stat-card.minor .number { color: #7a8c9a; }
+  .stat-card.total .number { color: #4b7790; }
+
+  /* Phase bars */
+  .phase-chart { margin-bottom: 32px; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(9,28,49,0.08); }
+  .phase-chart h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7a8c9a;
+    margin-bottom: 16px;
+  }
+  .phase-bar-row { display: flex; align-items: center; margin-bottom: 8px; }
+  .phase-bar-label { width: 120px; font-size: 13px; color: #455565; }
+  .phase-bar-track { flex: 1; height: 24px; background: #d6e4e9; border-radius: 6px; overflow: hidden; display: flex; }
+  .phase-bar-seg { height: 100%; transition: width 0.3s; }
+  .phase-bar-seg.critical { background: #c0392b; }
+  .phase-bar-seg.major { background: #e67e22; }
+  .phase-bar-seg.minor { background: #90b1c2; }
+  .phase-bar-count { width: 40px; text-align: right; font-size: 13px; color: #455565; margin-left: 8px; }
+
+  /* Heatmap */
+  .heatmap { margin-bottom: 32px; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(9,28,49,0.08); overflow-x: auto; }
+  .heatmap h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7a8c9a;
+    margin-bottom: 16px;
+  }
+  .heatmap table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  .heatmap th { padding: 6px 8px; color: #7a8c9a; font-weight: 600; text-align: center; }
+  .heatmap td { padding: 6px 8px; text-align: center; }
+  .heatmap td.file-cell { text-align: left; color: #455565; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .heat-0 { background: #f5fcfe; }
+  .heat-1 { background: #d6e4e9; }
+  .heat-2 { background: #90b1c2; }
+  .heat-3 { background: #4b7790; color: #f5fcfe; }
+  .heat-4 { background: #14304e; color: #f5fcfe; }
+
+  /* Finding cards */
+  .findings-section h2 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #091c31;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #d6e4e9;
+  }
+  .finding-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(9,28,49,0.08);
+    border-left: 4px solid #90b1c2;
+  }
+  .finding-card.severity-Critical { border-left-color: #c0392b; }
+  .finding-card.severity-Major { border-left-color: #e67e22; }
+  .finding-card.severity-Minor { border-left-color: #7a8c9a; }
+  .finding-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .finding-id { font-family: monospace; font-size: 13px; color: #4985a9; font-weight: 600; }
+  .severity-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .severity-badge.Critical { background: #fde8e8; color: #c0392b; }
+  .severity-badge.Major { background: #fef3e2; color: #e67e22; }
+  .severity-badge.Minor { background: #eef2f5; color: #7a8c9a; }
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    background: #d6e4e9;
+    color: #455565;
+  }
+  .finding-file { font-size: 13px; color: #4985a9; font-family: monospace; }
+  .finding-desc { font-size: 14px; color: #091c31; margin: 8px 0; }
+  .finding-rec { font-size: 13px; color: #455565; font-style: italic; }
+  .finding-snippet {
+    margin-top: 12px;
+    background: #091c31;
+    border-radius: 8px;
+    padding: 12px 16px;
+    overflow-x: auto;
+  }
+  .finding-snippet pre {
+    color: #d6e4e9;
+    font-size: 12px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    white-space: pre;
+    margin: 0;
+  }
+  .finding-snippet summary {
+    color: #90b1c2;
+    cursor: pointer;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .round-history { font-size: 12px; color: #7a8c9a; margin-top: 8px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <h2>Refactor Report</h2>
+    <div class="date">%%DATE%%</div>
+    <a class="nav-item active" data-target="dashboard" onclick="showSection('dashboard')">Dashboard</a>
+    <a class="nav-item" data-target="heatmap" onclick="showSection('heatmap')">Heatmap</a>
+    <a class="nav-item" data-target="phase-1" onclick="showSection('phase-1')">P1: Hygiene</a>
+    <a class="nav-item" data-target="phase-2" onclick="showSection('phase-2')">P2: Naming</a>
+    <a class="nav-item" data-target="phase-3" onclick="showSection('phase-3')">P3: Structure</a>
+    <a class="nav-item" data-target="phase-4" onclick="showSection('phase-4')">P4: Duplication</a>
+    <a class="nav-item" data-target="phase-5" onclick="showSection('phase-5')">P5: Consistency</a>
+    <a class="nav-item" data-target="phase-6" onclick="showSection('phase-6')">P6: Coupling</a>
+    <a class="nav-item" data-target="phase-7" onclick="showSection('phase-7')">P7: Hotspots</a>
+
+    <div class="filter-section">
+      <h3>Severity Filter</h3>
+      <button class="filter-btn active" onclick="toggleFilter('all')">All</button>
+      <button class="filter-btn" onclick="toggleFilter('Critical')">Critical</button>
+      <button class="filter-btn" onclick="toggleFilter('Major')">Major</button>
+      <button class="filter-btn" onclick="toggleFilter('Minor')">Minor</button>
+    </div>
+
+    <input type="text" class="search-box" placeholder="Search findings..." oninput="searchFindings(this.value)">
+  </nav>
+
+  <!-- Main content -->
+  <main class="main">
+    <!-- Dashboard -->
+    <section id="section-dashboard">
+      <div class="dashboard">
+        <div class="stat-card total"><div class="number">%%TOTAL%%</div><div class="label">Total Findings</div></div>
+        <div class="stat-card critical"><div class="number">%%CRITICAL%%</div><div class="label">Critical</div></div>
+        <div class="stat-card major"><div class="number">%%MAJOR%%</div><div class="label">Major</div></div>
+        <div class="stat-card minor"><div class="number">%%MINOR%%</div><div class="label">Minor</div></div>
+      </div>
+      <div class="phase-chart" id="phase-chart">
+        <h3>Findings by Phase</h3>
+      </div>
+    </section>
+
+    <!-- Heatmap -->
+    <section id="section-heatmap" class="hidden">
+      <div class="heatmap" id="heatmap-container">
+        <h3>File x Phase Heatmap</h3>
+      </div>
+    </section>
+
+    <!-- Phase sections -->
+    <section id="section-phase-1" class="hidden findings-section"><h2>Phase 1: Hygiene</h2><div class="findings-list" data-phase="1"></div></section>
+    <section id="section-phase-2" class="hidden findings-section"><h2>Phase 2: Naming</h2><div class="findings-list" data-phase="2"></div></section>
+    <section id="section-phase-3" class="hidden findings-section"><h2>Phase 3: Structure</h2><div class="findings-list" data-phase="3"></div></section>
+    <section id="section-phase-4" class="hidden findings-section"><h2>Phase 4: Duplication</h2><div class="findings-list" data-phase="4"></div></section>
+    <section id="section-phase-5" class="hidden findings-section"><h2>Phase 5: Consistency</h2><div class="findings-list" data-phase="5"></div></section>
+    <section id="section-phase-6" class="hidden findings-section"><h2>Phase 6: Coupling</h2><div class="findings-list" data-phase="6"></div></section>
+    <section id="section-phase-7" class="hidden findings-section"><h2>Phase 7: Hotspots</h2><div class="findings-list" data-phase="7"></div></section>
+  </main>
+</div>
+
+<script>
+const FINDINGS = %%DATA%%;
+
+let currentSection = 'dashboard';
+let currentFilter = 'all';
+let searchTerm = '';
+
+function showSection(target) {
+  document.querySelectorAll('.main > section').forEach(s => s.classList.add('hidden'));
+  document.getElementById('section-' + target).classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('[data-target="' + target + '"]').classList.add('active');
+  currentSection = target;
+}
+
+function toggleFilter(severity) {
+  currentFilter = severity;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderFindings();
+}
+
+function searchFindings(term) {
+  searchTerm = term.toLowerCase();
+  renderFindings();
+}
+
+function renderFindingCard(f) {
+  const snippetHtml = f.code_snippet
+    ? '<div class="finding-snippet"><details><summary>Show code</summary><pre>' +
+      escapeHtml(f.code_snippet) + '</pre></details></div>'
+    : '';
+  return '<div class="finding-card severity-' + f.severity + '" data-severity="' + f.severity + '" data-phase="' + f.phase + '">' +
+    '<div class="finding-header">' +
+    '<span class="finding-id">' + f.id + '</span>' +
+    '<span class="severity-badge ' + f.severity + '">' + f.severity + '</span>' +
+    '<span class="status-badge">' + f.status + '</span>' +
+    '</div>' +
+    '<div class="finding-file">' + escapeHtml(f.file) + (f.line ? ':' + f.line : '') + '</div>' +
+    '<div class="finding-desc">' + escapeHtml(f.description) + '</div>' +
+    (f.recommendation ? '<div class="finding-rec">' + escapeHtml(f.recommendation) + '</div>' : '') +
+    snippetHtml +
+    '<div class="round-history">Round ' + f.round + '</div>' +
+    '</div>';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderFindings() {
+  for (let phase = 1; phase <= 7; phase++) {
+    const container = document.querySelector('.findings-list[data-phase="' + phase + '"]');
+    if (!container) continue;
+    const filtered = FINDINGS.filter(f => {
+      if (f.phase !== phase) return false;
+      if (currentFilter !== 'all' && f.severity !== currentFilter) return false;
+      if (searchTerm && !JSON.stringify(f).toLowerCase().includes(searchTerm)) return false;
+      return true;
+    });
+    // Show latest round version of each finding (by base ID without round)
+    const latest = {};
+    filtered.forEach(f => {
+      const baseId = f.id.replace(/R\d+/, 'Rx');
+      if (!latest[baseId] || f.round > latest[baseId].round) latest[baseId] = f;
+    });
+    container.innerHTML = Object.values(latest).map(renderFindingCard).join('');
+  }
+}
+
+function renderPhaseChart() {
+  const chart = document.getElementById('phase-chart');
+  const phases = [1,2,3,4,5,6,7];
+  const names = {1:'Hygiene',2:'Naming',3:'Structure',4:'Duplication',5:'Consistency',6:'Coupling',7:'Hotspots'};
+  const maxCount = Math.max(...phases.map(p => FINDINGS.filter(f => f.phase === p).length), 1);
+
+  let html = '<h3>Findings by Phase</h3>';
+  phases.forEach(p => {
+    const pf = FINDINGS.filter(f => f.phase === p);
+    const crit = pf.filter(f => f.severity === 'Critical').length;
+    const maj = pf.filter(f => f.severity === 'Major').length;
+    const min = pf.filter(f => f.severity === 'Minor').length;
+    const total = pf.length;
+    const pctC = (crit / maxCount * 100).toFixed(1);
+    const pctM = (maj / maxCount * 100).toFixed(1);
+    const pctN = (min / maxCount * 100).toFixed(1);
+    html += '<div class="phase-bar-row">' +
+      '<div class="phase-bar-label">' + names[p] + '</div>' +
+      '<div class="phase-bar-track">' +
+      '<div class="phase-bar-seg critical" style="width:' + pctC + '%"></div>' +
+      '<div class="phase-bar-seg major" style="width:' + pctM + '%"></div>' +
+      '<div class="phase-bar-seg minor" style="width:' + pctN + '%"></div>' +
+      '</div>' +
+      '<div class="phase-bar-count">' + total + '</div></div>';
+  });
+  chart.innerHTML = html;
+}
+
+function renderHeatmap() {
+  const container = document.getElementById('heatmap-container');
+  const files = [...new Set(FINDINGS.map(f => f.file))].sort();
+  const phases = [1,2,3,4,5,6,7];
+  const phaseNames = {1:'P1',2:'P2',3:'P3',4:'P4',5:'P5',6:'P6',7:'P7'};
+
+  if (files.length === 0) {
+    container.innerHTML = '<h3>File x Phase Heatmap</h3><p style="color:#7a8c9a">No findings to display.</p>';
+    return;
+  }
+
+  let html = '<h3>File x Phase Heatmap</h3><table><thead><tr><th>File</th>';
+  phases.forEach(p => { html += '<th>' + phaseNames[p] + '</th>'; });
+  html += '</tr></thead><tbody>';
+
+  files.slice(0, 30).forEach(file => {
+    html += '<tr><td class="file-cell" title="' + escapeHtml(file) + '">' + escapeHtml(file) + '</td>';
+    phases.forEach(p => {
+      const count = FINDINGS.filter(f => f.file === file && f.phase === p).length;
+      const heat = count === 0 ? 0 : count <= 1 ? 1 : count <= 2 ? 2 : count <= 4 ? 3 : 4;
+      html += '<td class="heat-' + heat + '">' + (count || '') + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+// Initialize
+renderPhaseChart();
+renderHeatmap();
+renderFindings();
+</script>
+</body>
+</html>
