@@ -37,54 +37,104 @@ Refactoring happens at three points:
 2. **During coding** - Boy Scout check after each build phase
 3. **After coding** - mandatory scan of touched files before commit
 
+## Prerequisites
+
+- [Claude Code](https://claude.ai/code) installed and working
+- [Git](https://git-scm.com/downloads) installed
+
 ## Installation
 
-### Option A: Global installation (all projects)
+### Step 1: Clone this repo
 
-Copy the skill directories into your Claude Code skills folder:
+Pick a place to download it. This is a temporary clone — you'll copy the skills out of it.
 
-**PowerShell:**
+**PowerShell (Windows):**
 ```powershell
+cd $env:USERPROFILE\Downloads
+git clone https://github.com/kskillins/claude-code-workflow.git
+cd claude-code-workflow
+```
+
+**bash (macOS/Linux):**
+```bash
+cd ~/Downloads
+git clone https://github.com/kskillins/claude-code-workflow.git
+cd claude-code-workflow
+```
+
+### Step 2: Copy the skills
+
+Choose **one** of the two options below.
+
+#### Option A: Global installation (all your projects get the skills)
+
+**PowerShell (Windows):**
+```powershell
+# Create the skills folder if it doesn't exist
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\skills" | Out-Null
+
+# Copy each skill
 $skills = "build", "small-feature", "two-agent-planning", "building-against-plan", "refactor"
 foreach ($s in $skills) {
     Copy-Item -Recurse -Force $s "$env:USERPROFILE\.claude\skills\$s"
 }
 ```
 
-**macOS/Linux (bash):**
+**bash (macOS/Linux):**
 ```bash
+mkdir -p ~/.claude/skills
 cp -r build small-feature two-agent-planning building-against-plan refactor ~/.claude/skills/
 ```
 
-**Windows (Git Bash):**
-```bash
-cp -r build small-feature two-agent-planning building-against-plan refactor "$USERPROFILE/.claude/skills/"
+#### Option B: Project-level installation (skills only available in one project)
+
+Run this from inside your project directory (not the clone):
+
+**PowerShell (Windows):**
+```powershell
+# From your project root:
+New-Item -ItemType Directory -Force -Path .claude\skills | Out-Null
+
+$clonePath = "$env:USERPROFILE\Downloads\claude-code-workflow"
+$skills = "build", "small-feature", "two-agent-planning", "building-against-plan", "refactor"
+foreach ($s in $skills) {
+    Copy-Item -Recurse -Force "$clonePath\$s" ".claude\skills\$s"
+}
 ```
 
-Then merge the contents of `CLAUDE.md` from this repo into your `~/.claude/CLAUDE.md`.
+**bash (macOS/Linux):**
+```bash
+# From your project root:
+mkdir -p .claude/skills
+cp -r ~/Downloads/claude-code-workflow/{build,small-feature,two-agent-planning,building-against-plan,refactor} .claude/skills/
+```
 
-### Option B: Project-level installation (single project)
+### Step 3: Add the CLAUDE.md configuration
+
+Open the `CLAUDE.md` file from this repo and copy the sections you want into your own `CLAUDE.md`:
+
+- For **global** install: paste into `~/.claude/CLAUDE.md` (create it if it doesn't exist)
+- For **project** install: paste into the `CLAUDE.md` at your project root
+
+At minimum, copy the **Development Workflow** and **Sub-Agents and Skills** sections. The rest (Core Principles, Refactoring Discipline, etc.) are recommended but optional.
+
+### Step 4: Verify
+
+Open Claude Code in your project and type `/build`. If it appears in the skill list, you're good.
+
+### Cleanup
+
+You can delete the clone after installation:
 
 **PowerShell:**
 ```powershell
-New-Item -ItemType Directory -Force -Path .claude\skills | Out-Null
-$skills = "build", "small-feature", "two-agent-planning", "building-against-plan", "refactor"
-foreach ($s in $skills) {
-    Copy-Item -Recurse -Force $s ".claude\skills\$s"
-}
+Remove-Item -Recurse -Force "$env:USERPROFILE\Downloads\claude-code-workflow"
 ```
 
 **bash:**
 ```bash
-mkdir -p .claude/skills
-cp -r build small-feature two-agent-planning building-against-plan refactor .claude/skills/
+rm -rf ~/Downloads/claude-code-workflow
 ```
-
-Then merge the contents of `CLAUDE.md` from this repo into your project's `CLAUDE.md`.
-
-### Post-install
-
-After copying, verify the skills are detected by running Claude Code and typing `/build`. You should see it in the skill list.
 
 ## Customization
 
